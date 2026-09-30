@@ -1,6 +1,7 @@
 # My Submission — The Untested API
 
-Live URL Placeholder: <LIVE_URL>
+**Live API:** https://task-api-z9hh.onrender.com (try [`/tasks`](https://task-api-z9hh.onrender.com/tasks) and [`/tasks/stats`](https://task-api-z9hh.onrender.com/tasks/stats))
+
 
 > **Note on Data Store:** The API uses an in-memory data store. All data resets when the server restarts or sleeps on Render free tier.
 
@@ -84,13 +85,16 @@ curl -X PATCH http://localhost:3000/tasks/<task-id>/assign \
   -d '{"assignee": "Alice Smith"}'
 ```
 
-**Reassign a task to another user:**
 ```bash
 curl -X PATCH http://localhost:3000/tasks/<task-id>/assign \
   -H "Content-Type: application/json" \
   -d '{"assignee": "Bob Jones"}'
 ```
-
+``
+**Try it on the live API:**
+curl -X POST https://task-api-z9hh.onrender.com/tasks -H "Content-Type: application/json" -d '{"title":"Demo","priority":"high"}'
+**Reassign a task to another user:**
+```
 ---
 
 # Original Assignment Documentation
