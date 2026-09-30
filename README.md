@@ -1,59 +1,97 @@
-# Take-Home Assignment — The Untested API
+# My Submission — The Untested API
 
-A 2-day take-home assignment. You'll read unfamiliar code, write tests, track down bugs, and ship a small feature.
+Live URL Placeholder: <LIVE_URL>
 
-Read **[ASSIGNMENT.md](./ASSIGNMENT.md)** for the full brief before you start.
-
----
-
-## A note on AI tools
-
-You're welcome to use AI tools. What we're evaluating is your ability to read and reason about unfamiliar code — so your submission should reflect your own understanding, not just generated output.
-
-Concretely:
-- For each bug you report: include where in the code it lives and why it happens
-- For the feature you implement: briefly explain the design decisions you made
-- If something surprised you or you had to make a tradeoff, say so
+> **Note on Data Store:** The API uses an in-memory data store. All data resets when the server restarts or sleeps on Render free tier.
 
 ---
 
-## Getting Started
+## Submission Overview
 
-**Prerequisites:** Node.js 18+
+### How to Run Tests & Server
 
 ```bash
 cd task-api
 npm install
-npm start        # runs on http://localhost:3000
+npm test           # Run Jest test suite (65 tests across service & routes)
+npm run coverage   # Run Jest tests with coverage report
+npm start          # Start server locally on process.env.PORT (default 3000)
 ```
 
-**Tests:**
+### Real Test Coverage Summary
 
+```
+-----------------|---------|----------|---------|---------|-------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-----------------|---------|----------|---------|---------|-------------------
+All files        |   96.27 |    94.62 |   93.33 |   95.91 |                   
+ src             |   69.23 |       75 |       0 |   69.23 |                   
+  app.js         |   69.23 |       75 |       0 |   69.23 | 10-11,17-18       
+ src/routes      |     100 |      100 |     100 |     100 |                   
+  tasks.js       |     100 |      100 |     100 |     100 |                   
+ src/services    |     100 |       95 |     100 |     100 |                   
+  taskService.js |     100 |       95 |     100 |     100 | 23                
+ src/utils       |   94.11 |    93.33 |     100 |   94.11 |                   
+  validators.js  |   94.11 |    93.33 |     100 |   94.11 | 28,31             
+-----------------|---------|----------|---------|---------|-------------------
+```
+
+### Key Submission Files
+
+- [`task-api/tests/taskService.test.js`](./task-api/tests/taskService.test.js): Comprehensive unit tests for all service methods and edge cases.
+- [`task-api/tests/tasks.routes.test.js`](./task-api/tests/tasks.routes.test.js): Supertest integration tests for all Express HTTP routes.
+- [`task-api/coverage-summary.txt`](./task-api/coverage-summary.txt): Recorded raw Jest coverage output.
+- [`BUGS.md`](./BUGS.md): Detailed bug report documenting 5 proven bugs with root causes and fixes.
+- [`NOTES.md`](./NOTES.md): Design decisions, surprise analysis, and production considerations.
+- [`render.yaml`](./render.yaml): Render Blueprint deployment configuration.
+
+---
+
+## Discovered Bugs (Summary)
+
+See [`BUGS.md`](./BUGS.md) for full root causes, line numbers, and reproduction steps:
+
+1. **[FIXED] [BUG-1: Pagination Off-By-One Indexing](./BUGS.md#bug-1-pagination-off-by-one-offset-calculation-skips-page-1-items)** (High) — `getPaginated` calculated `offset = page * limit` instead of `(page - 1) * limit`, skipping page 1 items.
+2. **[BUG-2: Status Filter Substring Matching](./BUGS.md#bug-2-status-filtering-uses-substring-matching-instead-of-exact-enum-match)** (High) — `getByStatus` uses `.includes()`, allowing partial matches like `?status=do`.
+3. **[BUG-3: Task Priority Reset on Completion](./BUGS.md#bug-3-completing-task-unintentionally-resets-priority-to-medium)** (Medium) — `completeTask` hardcodes `priority: 'medium'` when marking tasks complete.
+4. **[BUG-4: Shared Store Reference Leak](./BUGS.md#bug-4-in-memory-data-store-leaks-object-references-allowing-unsafe-external-mutations)** (Medium) — `findById` returns direct object references, enabling unsafe direct mutations.
+5. **[BUG-5: README Status Enum Mismatch](./BUGS.md#bug-5-documentation-mismatch-for-status-enum-values-in-readmemd)** (Low) — README documented `pending|in-progress|completed` instead of `todo|in_progress|done`.
+
+---
+
+## New Endpoint: `PATCH /tasks/:id/assign`
+
+Assigns or reassigns a user to a task.
+
+### Endpoint Details
+
+- **Method:** `PATCH`
+- **Path:** `/tasks/:id/assign`
+- **Request Body:** `{ "assignee": "string" }`
+- **Success Response:** `200 OK` with updated task object.
+- **Error Responses:**
+  - `400 Bad Request` if `assignee` is missing, non-string, empty string, whitespace-only, or >100 characters.
+  - `404 Not Found` if task ID does not exist.
+
+### Curl Examples
+
+**Assign a task to a user:**
 ```bash
-npm test           # run test suite
-npm run coverage   # run with coverage report
+curl -X PATCH http://localhost:3000/tasks/<task-id>/assign \
+  -H "Content-Type: application/json" \
+  -d '{"assignee": "Alice Smith"}'
+```
+
+**Reassign a task to another user:**
+```bash
+curl -X PATCH http://localhost:3000/tasks/<task-id>/assign \
+  -H "Content-Type: application/json" \
+  -d '{"assignee": "Bob Jones"}'
 ```
 
 ---
 
-## Project Structure
-
-```
-task-api/
-  src/
-    app.js                  # Express app setup
-    routes/tasks.js         # Route handlers
-    services/taskService.js # Business logic + in-memory data store
-    utils/validators.js     # Input validation helpers
-  tests/                    # Your tests go here
-  package.json
-  jest.config.js
-ASSIGNMENT.md               # Full brief — read this first
-```
-
-> The data store is in-memory. It resets every time the server restarts.
-
----
+# Original Assignment Documentation
 
 ## API Reference
 
@@ -65,7 +103,7 @@ ASSIGNMENT.md               # Full brief — read this first
 | `DELETE` | `/tasks/:id`              | Delete a task (returns 204)              |
 | `PATCH`  | `/tasks/:id/complete`     | Mark a task as complete                  |
 | `GET`    | `/tasks/stats`            | Counts by status + overdue count         |
-| `PATCH`  | `/tasks/:id/assign`       | **Assign a task to a user** _(to implement)_ |
+| `PATCH`  | `/tasks/:id/assign`       | Assign a task to a user                  |
 
 ### Task shape
 
@@ -74,9 +112,10 @@ ASSIGNMENT.md               # Full brief — read this first
   "id": "uuid",
   "title": "string",
   "description": "string",
-  "status": "pending | in-progress | completed",
+  "status": "todo | in_progress | done",
   "priority": "low | medium | high",
   "dueDate": "ISO 8601 or null",
+  "assignee": "string | null",
   "completedAt": "ISO 8601 or null",
   "createdAt": "ISO 8601"
 }
@@ -93,21 +132,10 @@ curl -X POST http://localhost:3000/tasks \
 
 **List tasks with filter**
 ```bash
-curl "http://localhost:3000/tasks?status=pending&page=1&limit=10"
+curl "http://localhost:3000/tasks?status=todo&page=1&limit=10"
 ```
 
 **Mark complete**
 ```bash
 curl -X PATCH http://localhost:3000/tasks/<id>/complete
 ```
-
----
-
-## What to Submit
-
-See [ASSIGNMENT.md](./ASSIGNMENT.md) for full submission requirements. At minimum, include:
-
-- **Test files** — covering the endpoints and edge cases you identified
-- **Bug report** — what you found, where in the code, and why it's a bug (not just symptoms)
-- **At least one fix** — with a note on your approach
-- **`PATCH /tasks/:id/assign` implementation** — plus a short explanation of any design decisions (validation, edge cases, etc.)
