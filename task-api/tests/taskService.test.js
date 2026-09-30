@@ -15,6 +15,7 @@ describe('taskService Unit Tests', () => {
       expect(task.priority).toBe('medium');
       expect(task.dueDate).toBeNull();
       expect(task.completedAt).toBeNull();
+      expect(task.assignee).toBeNull();
       expect(task.createdAt).toBeDefined();
       expect(new Date(task.createdAt).toString()).not.toBe('Invalid Date');
     });
@@ -205,6 +206,26 @@ describe('taskService Unit Tests', () => {
       const created = taskService.create({ title: 'Urgent Task', priority: 'high' });
       const completed = taskService.completeTask(created.id);
       expect(completed.priority).toBe('high');
+    });
+  });
+
+  describe('assignTask', () => {
+    it('assigns task to a user and trims whitespace', () => {
+      const created = taskService.create({ title: 'Task to assign' });
+      const updated = taskService.assignTask(created.id, '  Alice Smith  ');
+      expect(updated).not.toBeNull();
+      expect(updated.assignee).toBe('Alice Smith');
+    });
+
+    it('allows reassignment to a different user', () => {
+      const created = taskService.create({ title: 'Task to reassign' });
+      taskService.assignTask(created.id, 'Alice');
+      const updated = taskService.assignTask(created.id, 'Bob');
+      expect(updated.assignee).toBe('Bob');
+    });
+
+    it('returns null when task ID does not exist', () => {
+      expect(taskService.assignTask('unknown-id', 'Alice')).toBeNull();
     });
   });
 

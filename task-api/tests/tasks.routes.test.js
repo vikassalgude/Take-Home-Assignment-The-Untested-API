@@ -290,4 +290,157 @@ describe('Task API Route Integration Tests', () => {
       expect(res2.body).toEqual({ error: 'Task not found' });
     });
   });
+
+  describe('PATCH /tasks/:id/assign', () => {
+    it('assigns task to a user and returns updated task (200 OK)', async () => {
+      const created = taskService.create({ title: 'Assignee test' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'Jane Doe' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.assignee).toBe('Jane Doe');
+      expect(res.body.title).toBe('Assignee test');
+
+      // Verify visible in GET /tasks
+      const getRes = await request(app).get('/tasks');
+      expect(getRes.body[0].assignee).toBe('Jane Doe');
+    });
+
+    it('trims leading and trailing whitespace from assignee string', async () => {
+      const created = taskService.create({ title: 'Trim test' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: '   John Smith   ' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.assignee).toBe('John Smith');
+    });
+
+    it('allows reassignment to a different user', async () => {
+      const created = taskService.create({ title: 'Reassign test' });
+
+      await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'First User' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'Second User' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.assignee).toBe('Second User');
+    });
+
+    it('handles assigning to the same user idempotently', async () => {
+      const created = taskService.create({ title: 'Same user test' });
+
+      await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'Alice' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'Alice' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.assignee).toBe('Alice');
+    });
+
+    it('preserves other task fields untouched when assigning', async () => {
+      const created = taskService.create({ title: 'Preserve fields', priority: 'high', status: 'in_progress' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'Bob' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.assignee).toBe('Bob');
+      expect(res.body.title).toBe('Preserve fields');
+      expect(res.body.priority).toBe('high');
+      expect(res.body.status).toBe('in_progress');
+    });
+
+    it('ensures PUT /tasks/:id does not wipe assignee field', async () => {
+      const created = taskService.create({ title: 'Initial' });
+      taskService.assignTask(created.id, 'Alice');
+
+      const res = await request(app)
+        .put(`/tasks/${created.id}`)
+        .send({ title: 'Updated Title' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.title).toBe('Updated Title');
+      expect(res.body.assignee).toBe('Alice');
+    });
+
+    it('returns 404 for unknown task ID', async () => {
+      const res = await request(app)
+        .patch('/tasks/non-existent-id/assign')
+        .send({ assignee: 'Alice' });
+
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: 'Task not found' });
+    });
+
+    it('returns 400 when body or assignee field is missing', async () => {
+      const created = taskService.create({ title: 'Missing assignee' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/assignee/i);
+    });
+
+    it('returns 400 when assignee is empty string', async () => {
+      const created = taskService.create({ title: 'Empty assignee' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: '' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/assignee/i);
+    });
+
+    it('returns 400 when assignee is whitespace-only string', async () => {
+      const created = taskService.create({ title: 'Whitespace assignee' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: '    ' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/assignee/i);
+    });
+
+    it('returns 400 when assignee is non-string (number, null, array, object)', async () => {
+      const created = taskService.create({ title: 'Non-string assignee' });
+
+      const cases = [123, null, ['Alice'], { name: 'Alice' }];
+      for (const invalidValue of cases) {
+        const res = await request(app)
+          .patch(`/tasks/${created.id}/assign`)
+          .send({ assignee: invalidValue });
+
+        expect(res.status).toBe(400);
+        expect(res.body.error).toMatch(/assignee/i);
+      }
+    });
+
+    it('returns 400 when assignee exceeds maximum length of 100 characters', async () => {
+      const created = taskService.create({ title: 'Too long assignee' });
+
+      const res = await request(app)
+        .patch(`/tasks/${created.id}/assign`)
+        .send({ assignee: 'a'.repeat(101) });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/assignee/i);
+    });
+  });
 });
