@@ -108,7 +108,7 @@ describe('taskService Unit Tests', () => {
   });
 
   describe('getPaginated', () => {
-    it.failing('BUG-1: getPaginated(1, 10) should return first page (offset 0), not skip first 10 items', () => {
+    it('BUG-1 [FIXED]: getPaginated(1, 10) should return first page (offset 0)', () => {
       for (let i = 1; i <= 5; i++) {
         taskService.create({ title: `Task ${i}` });
       }

@@ -74,7 +74,7 @@ describe('Task API Route Integration Tests', () => {
       expect(res.body).toEqual([]);
     });
 
-    it.failing('BUG-1: GET /tasks?page=1&limit=2 should return first 2 items of page 1', async () => {
+    it('BUG-1 [FIXED]: GET /tasks?page=1&limit=2 should return first 2 items of page 1', async () => {
       taskService.create({ title: 'T1' });
       taskService.create({ title: 'T2' });
       taskService.create({ title: 'T3' });
