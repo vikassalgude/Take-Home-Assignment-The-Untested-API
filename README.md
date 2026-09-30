@@ -24,15 +24,15 @@ npm start          # Start server locally on process.env.PORT (default 3000)
 -----------------|---------|----------|---------|---------|-------------------
 File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
 -----------------|---------|----------|---------|---------|-------------------
-All files        |   96.27 |    94.62 |   93.33 |   95.91 |                   
+All files        |   97.51 |    98.92 |   93.33 |   97.27 |                   
  src             |   69.23 |       75 |       0 |   69.23 |                   
   app.js         |   69.23 |       75 |       0 |   69.23 | 10-11,17-18       
  src/routes      |     100 |      100 |     100 |     100 |                   
   tasks.js       |     100 |      100 |     100 |     100 |                   
- src/services    |     100 |       95 |     100 |     100 |                   
-  taskService.js |     100 |       95 |     100 |     100 | 23                
- src/utils       |   94.11 |    93.33 |     100 |   94.11 |                   
-  validators.js  |   94.11 |    93.33 |     100 |   94.11 | 28,31             
+ src/services    |     100 |      100 |     100 |     100 |                   
+  taskService.js |     100 |      100 |     100 |     100 |                   
+ src/utils       |     100 |      100 |     100 |     100 |                   
+  validators.js  |     100 |      100 |     100 |     100 |                   
 -----------------|---------|----------|---------|---------|-------------------
 ```
 
@@ -41,7 +41,7 @@ All files        |   96.27 |    94.62 |   93.33 |   95.91 |
 - [`task-api/tests/taskService.test.js`](./task-api/tests/taskService.test.js): Comprehensive unit tests for all service methods and edge cases.
 - [`task-api/tests/tasks.routes.test.js`](./task-api/tests/tasks.routes.test.js): Supertest integration tests for all Express HTTP routes.
 - [`task-api/coverage-summary.txt`](./task-api/coverage-summary.txt): Recorded raw Jest coverage output.
-- [`BUGS.md`](./BUGS.md): Detailed bug report documenting 5 proven bugs with root causes and fixes.
+- [`BUGS.md`](./BUGS.md): Detailed bug report documenting 7 proven bugs with root causes and fixes.
 - [`NOTES.md`](./NOTES.md): Design decisions, surprise analysis, and production considerations.
 - [`render.yaml`](./render.yaml): Render Blueprint deployment configuration.
 
@@ -54,8 +54,10 @@ See [`BUGS.md`](./BUGS.md) for full root causes, line numbers, and reproduction 
 1. **[FIXED] [BUG-1: Pagination Off-By-One Indexing](./BUGS.md#bug-1-pagination-off-by-one-offset-calculation-skips-page-1-items)** (High) — `getPaginated` calculated `offset = page * limit` instead of `(page - 1) * limit`, skipping page 1 items.
 2. **[BUG-2: Status Filter Substring Matching](./BUGS.md#bug-2-status-filtering-uses-substring-matching-instead-of-exact-enum-match)** (High) — `getByStatus` uses `.includes()`, allowing partial matches like `?status=do`.
 3. **[BUG-3: Task Priority Reset on Completion](./BUGS.md#bug-3-completing-task-unintentionally-resets-priority-to-medium)** (Medium) — `completeTask` hardcodes `priority: 'medium'` when marking tasks complete.
-4. **[BUG-4: Shared Store Reference Leak](./BUGS.md#bug-4-in-memory-data-store-leaks-object-references-allowing-unsafe-external-mutations)** (Medium) — `findById` returns direct object references, enabling unsafe direct mutations.
-5. **[BUG-5: README Status Enum Mismatch](./BUGS.md#bug-5-documentation-mismatch-for-status-enum-values-in-readmemd)** (Low) — README documented `pending|in-progress|completed` instead of `todo|in_progress|done`.
+4. **[BUG-4: Shared Store Reference Leak](./BUGS.md#bug-4-in-memory-data-store-leaks-object-references-allowing-unsafe-external-mutations)** (Low) — `findById` returns direct object references, enabling unsafe direct mutations.
+5. **[FIXED] [BUG-5: README Status Enum Mismatch](./BUGS.md#bug-5-documentation-mismatch-for-status-enum-values-in-readmemd)** (Low) — README documented `pending|in-progress|completed` instead of `todo|in_progress|done`.
+6. **[BUG-6: `?limit=0` Overridden to Default 10](./BUGS.md#bug-6-limit0-pagination-parameter-overridden-to-default-10-due-to-falsy-fallback)** (Low) — `parseInt('0') || 10` overrides explicit limit 0 with default limit 10.
+7. **[BUG-7: Missing Type Validation for Description](./BUGS.md#bug-7-missing-data-type-validation-for-description-field-on-post-and-put)** (Low) — POST and PUT omit `description` type checking, allowing non-strings into store.
 
 ---
 

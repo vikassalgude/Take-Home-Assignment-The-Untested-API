@@ -31,10 +31,10 @@ My approach to auditing and expanding the Task Manager API followed a test-drive
 
 ## What I'd Test Next
 
-1. **Concurrency & Race Conditions:** Simulate parallel `PUT` and `PATCH` requests on the same task ID to verify atomic state transitions in multi-client environments.
-2. **Strict Date Parsing:** Test edge case date inputs (e.g. leap years, time zone offsets, out-of-range dates like `2026-02-31`) to ensure strict ISO 8601 compliance.
-3. **String Sanitization:** Test XSS / HTML injection vectors in `title`, `description`, and `assignee` fields to prevent script execution if consumed by frontend clients.
-4. **Pagination Limits:** Benchmark high page offsets and large limit values to measure array slice performance under large datasets.
+1. **Description Field Type Validation:** Test `POST /tasks` and `PUT /tasks/:id` with non-string `description` payload types (numbers, booleans, arrays, objects) to prevent invalid data types from leaking into memory.
+2. **Explicit `limit=0` Pagination Behavior:** Test query handling for `limit=0` to ensure falsy OR expressions (`parseInt(limit) || 10`) do not override explicit zero-limit requests with the default limit of 10.
+3. **Strict Date Parsing & ISO Formats:** Test edge case date strings (e.g. leap years, out-of-range dates like `2026-02-31`, unix timestamps, relative strings) to enforce strict ISO 8601 compliance.
+4. **String Sanitization & XSS Input:** Test XSS / script tag injection vectors in `title`, `description`, and `assignee` fields to protect downstream frontend applications.
 
 ---
 
