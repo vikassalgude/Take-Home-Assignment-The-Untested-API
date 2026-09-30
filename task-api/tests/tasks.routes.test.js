@@ -94,6 +94,24 @@ describe('Task API Route Integration Tests', () => {
       expect(res.body).toEqual([]);
     });
 
+    it.failing('BUG-6: GET /tasks?limit=0 should return empty array instead of defaulting to limit 10', async () => {
+      taskService.create({ title: 'T1' });
+      const res = await request(app).get('/tasks?page=1&limit=0');
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it('handles negative or huge page/limit parameters without crashing', async () => {
+      taskService.create({ title: 'T1' });
+
+      const resNegative = await request(app).get('/tasks?page=-1&limit=-5');
+      expect(resNegative.status).toBe(200);
+
+      const resHuge = await request(app).get('/tasks?page=1&limit=1000000');
+      expect(resHuge.status).toBe(200);
+      expect(resHuge.body.length).toBe(1);
+    });
+
     it('falls back gracefully to default pagination values when page/limit are non-numeric', async () => {
       taskService.create({ title: 'T1' });
 
@@ -104,6 +122,14 @@ describe('Task API Route Integration Tests', () => {
   });
 
   describe('POST /tasks', () => {
+    it.failing('BUG-7: POST /tasks should reject non-string description with 400 Bad Request', async () => {
+      const res = await request(app)
+        .post('/tasks')
+        .send({ title: 'Valid Title', description: 12345 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/description/i);
+    });
     it('creates a task with valid minimal payload (201 Created)', async () => {
       const res = await request(app)
         .post('/tasks')
@@ -232,6 +258,39 @@ describe('Task API Route Integration Tests', () => {
 
       expect(res.status).toBe(400);
       expect(res.body.error).toMatch(/status/i);
+    });
+
+    it('returns 400 when priority is invalid enum value', async () => {
+      const created = taskService.create({ title: 'Original' });
+
+      const res = await request(app)
+        .put(`/tasks/${created.id}`)
+        .send({ priority: 'invalid_priority' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/priority/i);
+    });
+
+    it('returns 400 when dueDate is invalid ISO date string', async () => {
+      const created = taskService.create({ title: 'Original' });
+
+      const res = await request(app)
+        .put(`/tasks/${created.id}`)
+        .send({ dueDate: 'invalid_date' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/dueDate/i);
+    });
+
+    it.failing('BUG-7: PUT /tasks/:id should reject non-string description with 400 Bad Request', async () => {
+      const created = taskService.create({ title: 'Original' });
+
+      const res = await request(app)
+        .put(`/tasks/${created.id}`)
+        .send({ description: 12345 });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/description/i);
     });
   });
 

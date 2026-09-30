@@ -151,6 +151,14 @@ describe('taskService Unit Tests', () => {
       });
     });
 
+    it('handles tasks with unknown or custom status without crashing', () => {
+      taskService.create({ title: 'Unknown status task', status: 'unknown_status' });
+      const stats = taskService.getStats();
+      expect(stats.todo).toBe(0);
+      expect(stats.in_progress).toBe(0);
+      expect(stats.done).toBe(0);
+    });
+
     it('returns zeros when store is empty', () => {
       expect(taskService.getStats()).toEqual({
         todo: 0,
